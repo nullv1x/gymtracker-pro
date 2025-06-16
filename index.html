@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GymTracker Pro - App Modular</title>
+  <!-- Material Icons CDN -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="logo" aria-label="GymTracker Pro Logo">GymTracker Pro</div>
+    <nav role="navigation" aria-label="Main Navigation" id="main-nav">
+      <a href="#" data-section="dashboard" class="active" aria-current="page"><span class="material-icons" aria-hidden="true">dashboard</span>Dashboard</a>
+      <a href="#" data-section="rutinas"><span class="material-icons" aria-hidden="true">fitness_center</span>Rutinas</a>
+      <a href="#" data-section="progreso"><span class="material-icons" aria-hidden="true">show_chart</span>Progreso</a>
+      <a href="#" data-section="registro"><span class="material-icons" aria-hidden="true">edit_note</span>Registro Diario</a>
+      <a href="#" data-section="perfil"><span class="material-icons" aria-hidden="true">person</span>Perfil</a>
+      <button class="logout-button" id="logoutBtn" title="Cerrar sesión" aria-label="Cerrar sesión" style="display:none;">Cerrar Sesión</button>
+    </nav>
+  </header>
+
+  <main role="main">
+
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="content-section active" tabindex="0">
+      <div class="card" aria-label="Resumen del Día">
+        <div class="card-header">
+          <span class="material-icons card-icon" aria-hidden="true">calendar_today</span>
+          Tu Rutina Programada Hoy
+        </div>
+        <div class="card-content" id="dashboard-rutina">
+          No tienes una rutina programada para hoy.
+        </div>
+      </div>
+
+      <div class="card" aria-label="Estado Físico Actual">
+        <div class="card-header">
+          <span class="material-icons card-icon" aria-hidden="true">monitor_heart</span>
+          Estado Físico Actual
+        </div>
+        <div class="card-content" id="dashboard-estado-fisico">
+          Carga tus datos en la sección Perfil para ver tu estado.
+        </div>
+      </div>
+
+      <div class="card motivation" aria-label="Frase Motivacional">
+        <div class="card-header">
+          <span class="material-icons card-icon" aria-hidden="true">emoji_events</span>
+          ¡A Mantener el Ritmo!
+        </div>
+        <p id="motivational-quote">"La fuerza no viene de la capacidad física, sino de una voluntad indomable." - Mahatma Gandhi</p>
+      </div>
+
+      <div class="card" aria-label="Objetivos Diarios">
+        <div class="card-header">
+          <span class="material-icons card-icon" aria-hidden="true">flag</span>
+          Objetivos del Día
+        </div>
+        <div class="card-content" id="dashboard-objetivos">
+          No hay objetivos definidos. Puedes agregarlos en tu Perfil.
+        </div>
+      </div>
+    </section>
+
+    <!-- Rutinas Section -->
+    <section id="rutinas" class="content-section" tabindex="0" aria-label="Gestión de Rutinas">
+      <h2>Tus Rutinas</h2>
+      <button id="btn-add-routine" class="btn-primary" style="margin-bottom:24px;">+ Crear Nueva Rutina</button>
+      <div id="rutinas-list" aria-live="polite" aria-atomic="true"></div>
+    </section>
+
+    <!-- Progreso Section -->
+    <section id="progreso" class="content-section" tabindex="0" aria-label="Registro de Progreso Físico">
+      <h2>Progreso Físico</h2>
+      <form id="progreso-form" aria-label="Formulario de Progreso">
+        <div class="input-group">
+          <div>
+            <label for="pesoInput">Peso (kg)</label>
+            <input type="number" step="0.1" id="pesoInput" name="peso" min="20" max="300" required aria-required="true" />
+          </div>
+          <div>
+            <label for="alturaInput">Altura (cm)</label>
+            <input type="number" step="0.1" id="alturaInput" name="altura" min="50" max="250" required aria-required="true" />
+          </div>
+        </div>
+        <div class="input-group">
+          <div>
+            <label for="imcInput">IMC (calculado)</label>
+            <input type="text" id="imcInput" name="imc" readonly aria-readonly="true"/>
+          </div>
+          <div>
+            <label for="grasaInput">% Grasa Corporal</label>
+            <input type="number" step="0.1" id="grasaInput" name="grasa" min="0" max="70" />
+          </div>
+        </div>
+        <button type="submit">Guardar Progreso</button>
+      </form>
+      <div id="progreso-messages" role="alert" aria-live="assertive"></div>
+      <div id="chart-container" style="margin-top:32px;">
+        <canvas id="weightChart" aria-label="Gráfica de peso en el tiempo" role="img"></canvas>
+      </div>
+    </section>
+
+    <!-- Registro Diario Section -->
+    <section id="registro" class="content-section" tabindex="0" aria-label="Registro Diario Personal">
+      <h2>Registro Diario</h2>
+      <form id="registro-form" aria-label="Formulario de Registro Diario">
+        <label for="registroText">¿Cómo te sentiste hoy?</label>
+        <textarea id="registroText" rows="4" placeholder="Escribe tu nota aquí..."></textarea>
+        <label for="animusSelect">Estado de ánimo</label>
+        <select id="animusSelect">
+          <option value="">Selecciona un estado</option>
+          <option value="feliz">Feliz 😊</option>
+          <option value="neutral">Neutral 😐</option>
+          <option value="estresado">Estresado 😓</option>
+          <option value="cansado">Cansado 😴</option>
+          <option value="motivado">Motivado 💪</option>
+        </select>
+        <label><input type="checkbox" id="checkEntreno"/> Día cumplido (Entrené)</label>
+        <button type="submit">Guardar Registro</button>
+      </form>
+      <div id="registro-messages" role="alert" aria-live="assertive"></div>
+      <div id="registro-list"></div>
+    </section>
+
+    <!-- Perfil Section -->
+    <section id="perfil" class="content-section" tabindex="0" aria-label="Perfil de Usuario y Configuración">
+      <h2>Perfil y Configuración</h2>
+      <form id="perfil-form" aria-label="Formulario de perfil de usuario">
+        <label for="nombreInput">Nombre</label>
+        <input type="text" id="nombreInput" name="nombre" required autocomplete="name" aria-required="true"/>
+        <label for="emailInput">Email (usuario)</label>
+        <input type="email" id="emailInput" name="email" required autocomplete="email" aria-required="true" />
+        <label for="edadInput">Edad</label>
+        <input type="number" min="10" max="120" id="edadInput" name="edad" />
+        <label for="generoInput">Género</label>
+        <select id="generoInput" name="genero" >
+          <option value="">Selecciona</option>
+          <option value="masculino">Masculino</option>
+          <option value="femenino">Femenino</option>
+          <option value="otro">Otro</option>
+        </select>
+        <label for="pesoInicialInput">Peso Inicial (kg)</label>
+        <input type="number" step="0.1" id="pesoInicialInput" name="pesoInicial" min="20" max="300" />
+        <label for="objetivoInput">Objetivo</label>
+        <select id="objetivoInput" name="objetivo">
+          <option value="">Selecciona</option>
+          <option value="aumentar">Aumentar Masa Muscular</option>
+          <option value="reducir">Reducir Grasa</option>
+          <option value="mantener">Mantener</option>
+        </select>
+        <label for="recordatoriosInput">Recordatorios (ejemplo: "08:00, 19:00")</label>
+        <input type="text" id="recordatoriosInput" name="recordatorios" placeholder="HH:MM, HH:MM, ..." />
+        <label for="modoOscuroInput">Modo Oscuro</label>
+        <input type="checkbox" id="modoOscuroInput" />
+        <button type="submit">Guardar Perfil</button>
+      </form>
+      <div id="perfil-messages" role="alert" aria-live="assertive"></div>
+    </section>
+
+  </main>
+
+  <!-- Modal para Login / Registro -->
+  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
+    <div id="modal-content">
+      <h2 id="modalTitle">Iniciar Sesión</h2>
+      <form id="login-form" aria-label="Formulario de inicio de sesión">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" name="loginEmail" required autocomplete="username" aria-required="true"/>
+        <label for="loginPassword">Contraseña</label>
+        <input type="password" id="loginPassword" name="loginPassword" minlength="6" required autocomplete="current-password" aria-required="true"/>
+        <button type="submit">Entrar</button>
+      </form>
+      <form id="register-form" aria-label="Formulario de registro" style="margin-top:20px; display:none;">
+        <label for="regEmail">Email</label>
+        <input type="email" id="regEmail" name="regEmail" required autocomplete="email" aria-required="true" />
+        <label for="regPassword">Contraseña</label>
+        <input type="password" id="regPassword" name="regPassword" minlength="6" required autocomplete="new-password" aria-required="true" />
+        <label for="regPasswordConfirm">Confirmar Contraseña</label>
+        <input type="password" id="regPasswordConfirm" name="regPasswordConfirm" minlength="6" required aria-required="true" />
+        <button type="submit">Crear Cuenta</button>
+      </form>
+      <div class="toggle-link" id="toggleToRegister" tabindex="0">¿No tienes cuenta? Regístrate aquí</div>
+      <div class="toggle-link" id="toggleToLogin" tabindex="0" style="display:none;">¿Ya tienes cuenta? Inicia sesión</div>
+      <div id="modal-error" role="alert"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script type="module" src="js/app.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/routines.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/diary.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
+
