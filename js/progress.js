@@ -1,5 +1,4 @@
 import { showMessage, calculateIMC, getIMCDescription } from './ui.js';
-import { saveUserData } from './auth.js';
 
 const progForm = document.getElementById('progreso-form');
 const imcInput = document.getElementById('imcInput');
@@ -7,11 +6,40 @@ const progresoMessages = document.getElementById('progreso-messages');
 const ctxWeight = document.getElementById('weightChart').getContext('2d');
 let weightChart = null;
 
-let currentUserDataRef = null;
-let currentUserEmailRef = null;
+let userData = null;
+let saveAndUpdate = null;
 
-progForm.peso.addEventListener('input', updateIMC);
-progForm.altura.addEventListener('input', updateIMC);
+export function initProgress(userDataRef, saveCallback) {
+  userData = userDataRef;
+  saveAndUpdate = saveCallback;
+
+  progForm.peso.addEventListener('input', updateIMC);
+  progForm.altura.addEventListener('input', updateIMC);
+
+  progForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const peso = parseFloat(progForm.peso.value);
+    const altura = parseFloat(progForm.altura.value);
+    const grasa = parseFloat(progForm.grasa.value);
+    if (isNaN(peso) || isNaN(altura) || peso < 20 || altura < 50) {
+      alert('Por favor ingresa valores válidos para peso y altura.');
+      return;
+    }
+    userData.progreso.push({
+      fecha: (new Date()).toISOString(),
+      peso,
+      altura,
+      grasa: isNaN(grasa) ? null : grasa
+    });
+    saveAndUpdate();
+    showMessage('progreso-messages', 'Progreso guardado correctamente.');
+    renderProgresoChart();
+    progForm.reset();
+    imcInput.value = '';
+  });
+
+  renderProgresoChart();
+}
 
 function updateIMC() {
   const peso = parseFloat(progForm.peso.value);
@@ -20,49 +48,16 @@ function updateIMC() {
   imcInput.value = imc || '';
 }
 
-progForm.addEventListener('submit', e => {
-  e.preventDefault();
-  if (!currentUserEmailRef) return;
-  const peso = parseFloat(progForm.peso.value);
-  const altura = parseFloat(progForm.altura.value);
-  const grasa = parseFloat(progForm.grasa.value);
-  if (isNaN(peso) || isNaN(altura) || peso < 20 || altura < 50) {
-    alert('Por favor ingresa valores válidos para peso y altura.');
-    return;
-  }
-  currentUserDataRef.progreso.push({
-    fecha: (new Date()).toISOString(),
-    peso,
-    altura,
-    grasa: isNaN(grasa) ? null : grasa
-  });
-  saveUserData(currentUserEmailRef, currentUserDataRef);
-  showMessage('progreso-messages', 'Progreso guardado correctamente.');
-  renderProgresoChart();
-  updateDashboardCallback?.();
-  progForm.reset();
-  imcInput.value = '';
-});
-
-let updateDashboardCallback = null;
-
-export function initProgress(currentUserEmail, currentUserData, updateDashboardFn) {
-  currentUserDataRef = currentUserData;
-  currentUserEmailRef = currentUserEmail;
-  updateDashboardCallback = updateDashboardFn;
-  renderProgresoChart();
-}
-
 export function renderProgresoChart() {
-  if (!currentUserDataRef.progreso.length) {
+  if (!userData.progreso.length) {
     if (weightChart) {
       weightChart.destroy();
       weightChart = null;
     }
     return;
   }
-  const labels = currentUserDataRef.progreso.map(p => new Date(p.fecha).toLocaleDateString());
-  const dataPeso = currentUserDataRef.progreso.map(p => p.peso);
+  const labels = userData.progreso.map(p => new Date(p.fecha).toLocaleDateString());
+  const dataPeso = userData.progreso.map(p => p.peso);
 
   if (weightChart) {
     weightChart.data.labels = labels;

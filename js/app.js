@@ -1,23 +1,54 @@
-import { initAuth, getCurrentUserEmail, clearCurrentUserEmail, getUserData } from './auth.js';
-import { toggleModal } from './ui.js';
 import { fillPerfilForm, initProfileForm } from './profile.js';
-import { initRoutines } from './routines.js';
-import { initProgress } from './progress.js';
-import { initDiary } from './diary.js';
-import { applyDarkMode } from './ui.js';
+import { initRoutines, renderRutinas } from './routines.js';
+import { initProgress, renderProgresoChart } from './progress.js';
+import { initDiary, renderRegistrosDiarios } from './diary.js';
+import { applyDarkMode, showMessage } from './ui.js';
 
 const navLinks = document.querySelectorAll('nav a[data-section]');
 const sections = document.querySelectorAll('.content-section');
-const logoutBtn = document.getElementById('logoutBtn');
 
-let currentUserEmail = null;
+const localStorageKey = 'gymUserData';
+
 let currentUserData = null;
+
+function loadUserData() {
+  const dataJson = localStorage.getItem(localStorageKey);
+  if (dataJson) {
+    try {
+      return JSON.parse(dataJson);
+    } catch {
+      return getDefaultUserData();
+    }
+  }
+  return getDefaultUserData();
+}
+
+function saveUserData(data) {
+  localStorage.setItem(localStorageKey, JSON.stringify(data));
+}
+
+function getDefaultUserData() {
+  return {
+    perfil: {
+      nombre: '',
+      edad: '',
+      genero: '',
+      pesoInicial: '',
+      objetivo: '',
+      recordatorios: '',
+      modoOscuro: false,
+      email: ''
+    },
+    progreso: [],
+    rutinas: [],
+    registroDiario: [],
+  };
+}
 
 function showAppSections(show) {
   sections.forEach(s => {
     s.style.display = show ? 'block' : 'none';
   });
-  logoutBtn.style.display = show ? 'inline-block' : 'none';
   navLinks.forEach(link => {
     if(show) {
       link.removeAttribute('disabled');
@@ -25,19 +56,6 @@ function showAppSections(show) {
       link.setAttribute('disabled', 'true');
     }
   });
-}
-
-logoutBtn.addEventListener('click', () => {
-  clearCurrentUserEmail();
-  location.reload();
-});
-
-function updateDashboard() {
-  if (!currentUserData) return;
-  // Aquí actualizas dashboard según currentUserData
-  // Lógica sencilla para dashboard en tu app completa
-  // ...
-  applyDarkMode(currentUserData.perfil?.modoOscuro);
 }
 
 function activateSection(sectionId) {
@@ -56,32 +74,56 @@ navLinks.forEach(link => {
   });
 });
 
-function initializeUser(email) {
-  currentUserEmail = email;
-  currentUserData = getUserData(email);
-  if (!currentUserData) {
-    alert('Error al cargar datos de usuario.');
-    return;
+function updateDashboard() {
+  if (!currentUserData) return;
+  let rutinaHoy = currentUserData.rutinas.find(r => !r.completada);
+  if (!rutinaHoy) rutinaHoy = currentUserData.rutinas[0] || null;
+  const rutinaElem = document.getElementById('dashboard-rutina');
+  if (rutinaHoy) {
+    let ejerciciosHtml = rutinaHoy.ejercicios.slice(0, 3).map(ej => `${ej.nombre} (${ej.series}x${ej.reps})`).join(', ');
+    if (rutinaHoy.ejercicios.length > 3) ejerciciosHtml += ', ...';
+    rutinaElem.innerHTML = `<strong>${rutinaHoy.nombre} ${rutinaHoy.tipo ? '(' + rutinaHoy.tipo + ')' : ''}</strong><br/>Ejercicios: ${ejerciciosHtml || 'Sin ejercicios definidos.'}`;
+  } else {
+    rutinaElem.textContent = 'No tienes una rutina programada para hoy.';
   }
-  fillPerfilForm(currentUserData.perfil);
-  initProfileForm(currentUserEmail, currentUserData, updateDashboard);
-  initRoutines(currentUserEmail, currentUserData, updateDashboard);
-  initProgress(currentUserEmail, currentUserData, updateDashboard);
-  initDiary(currentUserEmail, currentUserData);
+  const estadElem = document.getElementById('dashboard-estado-fisico');
+  const ultimoProgreso = currentUserData.progreso.slice(-1)[0];
+  if (ultimoProgreso) {
+    const peso = ultimoProgreso.peso || 'N/A';
+    const imc = (peso && ultimoProgreso.altura) ? (peso / ((ultimoProgreso.altura / 100) ** 2)).toFixed(1) : null;
+    const imcText = imc ? `${imc} (${imc >= 30 ? 'Obesidad' : imc >= 25 ? 'Sobrepeso' : imc >= 18.5 ? 'Normal' : 'Bajo peso'})` : 'N/A';
+    estadElem.innerHTML = `
+      <p><strong>Peso:</strong> ${peso} kg</p>
+      <p><strong>IMC:</strong> ${imcText}</p>`;
+  } else {
+    estadElem.innerHTML = 'Carga tus datos en la sección Progreso para ver tu estado.';
+  }
+  const objElem = document.getElementById('dashboard-objetivos');
+  if (currentUserData.perfil.objetivo) {
+    objElem.innerHTML = `<ul><li>Objetivo: ${currentUserData.perfil.objetivo}</li><li>Completar la rutina del día</li></ul>`;
+  } else {
+    objElem.textContent = 'No hay objetivos definidos. Puedes agregarlos en tu Perfil.';
+  }
+  applyDarkMode(currentUserData.perfil.modoOscuro);
+}
+
+function saveAndUpdate() {
+  saveUserData(currentUserData);
   updateDashboard();
-  showAppSections(true);
-  activateSection('dashboard');
-  toggleModal(false);
+  renderRutinas();
+  renderProgresoChart();
+  renderRegistrosDiarios();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const email = getCurrentUserEmail();
-  initAuth(initializeUser);
-  if (!email) {
-    // No sesión activa, mostrar modal login/registro
-    toggleModal(true);
-    showAppSections(false);
-  } else {
-    initializeUser(email);
-  }
+  currentUserData = loadUserData();
+  fillPerfilForm(currentUserData.perfil);
+  initProfileForm(currentUserData, saveAndUpdate);
+  initRoutines(currentUserData, saveAndUpdate);
+  initProgress(currentUserData, saveAndUpdate);
+  initDiary(currentUserData, saveAndUpdate);
+
+  updateDashboard();
+  showAppSections(true);
+  activateSection('dashboard');
 });

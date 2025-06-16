@@ -1,20 +1,27 @@
 import { showMessage } from './ui.js';
-import { saveUserData } from './auth.js';
 
 const rutinasList = document.getElementById('rutinas-list');
 const btnAddRoutine = document.getElementById('btn-add-routine');
 
-let currentUserDataRef = null;
-let currentUserEmailRef = null;
-let onUpdateDashboard = null;
+let userData = null;
+let saveAndUpdate = null;
+let modalRoutine = null;
 
-export function renderRutinas(currentUserData) {
+export function initRoutines(userDataRef, saveCallback) {
+  userData = userDataRef;
+  saveAndUpdate = saveCallback;
+
+  renderRutinas();
+  btnAddRoutine.addEventListener('click', () => openRoutineEditor());
+}
+
+export function renderRutinas() {
   rutinasList.innerHTML = '';
-  if (!currentUserData.rutinas.length) {
+  if (!userData.rutinas.length) {
     rutinasList.innerHTML = '<p>No tienes rutinas guardadas. Usa el botón para crear una.</p>';
     return;
   }
-  currentUserData.rutinas.forEach((rutina, idx) => {
+  userData.rutinas.forEach((rutina, idx) => {
     const div = document.createElement('div');
     div.className = 'routine-card';
     div.setAttribute('tabindex', '0');
@@ -60,20 +67,9 @@ export function renderRutinas(currentUserData) {
   });
 }
 
-export function initRoutines(currentUserEmail, currentUserData, updateDashboard) {
-  currentUserDataRef = currentUserData;
-  currentUserEmailRef = currentUserEmail;
-  onUpdateDashboard = updateDashboard;
-
-  renderRutinas(currentUserDataRef);
-  btnAddRoutine.addEventListener('click', () => openRoutineEditor());
-}
-
-let modalRoutine = null;
-
 function openRoutineEditor(index) {
   if (modalRoutine) modalRoutine.remove();
-  const rutina = (typeof index === 'number' && currentUserDataRef.rutinas[index]) ? currentUserDataRef.rutinas[index] : null;
+  const rutina = (typeof index === 'number' && userData.rutinas[index]) ? userData.rutinas[index] : null;
   modalRoutine = document.createElement('div');
   modalRoutine.id = 'modalRoutine';
   modalRoutine.style.position = 'fixed';
@@ -123,7 +119,6 @@ function openRoutineEditor(index) {
 
   document.body.appendChild(modalRoutine);
 
-  // Exercise controls
   const exercisesList = modalRoutine.querySelector('#exercises-list');
   const addExerciseBtn = modalRoutine.querySelector('#add-exercise-btn');
 
@@ -145,19 +140,16 @@ function openRoutineEditor(index) {
 
   addExerciseBtn.onclick = addExerciseEmpty;
 
-  // Remove buttons existing
   modalRoutine.querySelectorAll('.remove-exercise').forEach(btn => {
     btn.onclick = () => btn.parentElement.remove();
   });
 
-  // Cancel button
   modalRoutine.querySelector('#cancel-routine-btn').onclick = () => {
     modalRoutine.remove();
     modalRoutine = null;
   };
 
-  // Submit form
-  modalRoutine.querySelector('#routine-form').onsubmit = (e) => {
+  modalRoutine.querySelector('#routine-form').onsubmit = e => {
     e.preventDefault();
     const nom = modalRoutine.querySelector('#routineNameInput').value.trim();
     if (!nom) {
@@ -177,16 +169,21 @@ function openRoutineEditor(index) {
         alert('Completa correctamente todos los ejercicios.');
         return;
       }
-      ejerciciosArr.push({ nombre, series, reps, peso: isNaN(peso) ? 0 : peso, descanso: isNaN(descanso) ? 60 : descanso });
+      ejerciciosArr.push({
+        nombre,
+        series,
+        reps,
+        peso: isNaN(peso) ? 0 : peso,
+        descanso: isNaN(descanso) ? 60 : descanso
+      });
     }
     if (rutina) {
-      currentUserDataRef.rutinas[index] = { nombre: nom, tipo, ejercicios: ejerciciosArr, completada: rutina.completada || false };
+      userData.rutinas[index] = { nombre: nom, tipo, ejercicios: ejerciciosArr, completada: rutina.completada || false };
     } else {
-      currentUserDataRef.rutinas.push({ nombre: nom, tipo, ejercicios: ejerciciosArr, completada: false });
+      userData.rutinas.push({ nombre: nom, tipo, ejercicios: ejerciciosArr, completada: false });
     }
-    saveUserData(currentUserEmailRef, currentUserDataRef);
-    renderRutinas(currentUserDataRef);
-    if (onUpdateDashboard) onUpdateDashboard();
+    saveAndUpdate();
+    renderRutinas();
     modalRoutine.remove();
     modalRoutine = null;
     showMessage('perfil-messages', 'Rutina guardada correctamente.');
@@ -195,26 +192,25 @@ function openRoutineEditor(index) {
 
 function deleteRoutine(idx) {
   if (!confirm('¿Eliminar esta rutina? Esta acción no se puede deshacer.')) return;
-  currentUserDataRef.rutinas.splice(idx, 1);
-  saveUserData(currentUserEmailRef, currentUserDataRef);
-  renderRutinas(currentUserDataRef);
-  if (onUpdateDashboard) onUpdateDashboard();
+  userData.rutinas.splice(idx, 1);
+  saveAndUpdate();
+  renderRutinas();
   showMessage('perfil-messages', 'Rutina eliminada.');
 }
+
 function toggleCompleteRoutine(idx) {
-  currentUserDataRef.rutinas[idx].completada = !currentUserDataRef.rutinas[idx].completada;
-  saveUserData(currentUserEmailRef, currentUserDataRef);
-  renderRutinas(currentUserDataRef);
-  if (onUpdateDashboard) onUpdateDashboard();
+  userData.rutinas[idx].completada = !userData.rutinas[idx].completada;
+  saveAndUpdate();
+  renderRutinas();
 }
+
 function duplicateRoutine(idx) {
-  const original = currentUserDataRef.rutinas[idx];
+  const original = userData.rutinas[idx];
   const copia = JSON.parse(JSON.stringify(original));
   copia.nombre += ' (Copia)';
   copia.completada = false;
-  currentUserDataRef.rutinas.push(copia);
-  saveUserData(currentUserEmailRef, currentUserDataRef);
-  renderRutinas(currentUserDataRef);
-  if (onUpdateDashboard) onUpdateDashboard();
+  userData.rutinas.push(copia);
+  saveAndUpdate();
+  renderRutinas();
   showMessage('perfil-messages', 'Rutina duplicada.');
 }
